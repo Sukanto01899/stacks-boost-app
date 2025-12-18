@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { openContractCall } from "@stacks/connect";
-import { STACKS_MAINNET, STACKS_TESTNET, type StacksNetwork } from "@stacks/network";
 import {
   ClarityType,
   cvToValue,
@@ -20,6 +19,9 @@ import {
   STACKS_APP_DETAILS,
   STACKS_CONTRACT_ADDRESS,
   STACKS_CONTRACT_NAME,
+  STACKS_EXPLORER_CHAIN,
+  STACKS_NETWORK,
+  STACKS_NETWORK_INSTANCE,
 } from "@/lib/stacks-config";
 import { formatMicrostxToStx, parseStxToMicrostx } from "@/lib/stx-utils";
 
@@ -58,7 +60,9 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function StxActions() {
+type StxActionsMode = "all" | "deposit" | "borrow";
+
+export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
   const { isConnected, isLoading, isPending, stxAddress, connect } = useStacks();
   const [amount, setAmount] = useState("1");
   const [borrowAmount, setBorrowAmount] = useState("1");
@@ -95,35 +99,18 @@ export function StxActions() {
     !isWorking &&
     !!parsedBorrowAmount &&
     !!parsedCollateralAmount;
-  const hasActiveDeposit = depositedBalance !== null && depositedBalance > 0n;
   const hasActiveBorrow = borrowedBalance !== null && borrowedBalance > 0n;
 
-  const activeNetwork = useMemo<StacksNetwork>(() => {
-    if (stxAddress?.startsWith("SP") || stxAddress?.startsWith("SM")) {
-      return STACKS_MAINNET;
-    }
-    return STACKS_TESTNET;
-  }, [stxAddress]);
+  const activeNetwork = STACKS_NETWORK_INSTANCE;
 
-  const networkLabel = useMemo(() => {
-    return activeNetwork === STACKS_MAINNET ? "Mainnet" : "Testnet";
-  }, [activeNetwork]);
+  const networkLabel = STACKS_NETWORK === "mainnet" ? "Mainnet" : "Testnet";
 
   const explorerUrl = useMemo(() => {
     if (!lastTxId) return null;
-    const chain = activeNetwork === STACKS_MAINNET ? "mainnet" : "testnet";
-    return `https://explorer.hiro.so/txid/${lastTxId}?chain=${chain}`;
-  }, [activeNetwork, lastTxId]);
+    return `https://explorer.hiro.so/txid/${lastTxId}?chain=${STACKS_EXPLORER_CHAIN}`;
+  }, [lastTxId]);
 
-  const networkMismatch = useMemo(() => {
-    if (!stxAddress) return null;
-    const walletNetwork = stxAddress.startsWith("SP") ? "mainnet" : "testnet";
-    const contractNetwork = STACKS_CONTRACT_ADDRESS.startsWith("SP")
-      ? "mainnet"
-      : "testnet";
-    if (walletNetwork === contractNetwork) return null;
-    return `Wallet is on ${walletNetwork}, but contract is ${contractNetwork}. Switch networks or update the contract address.`;
-  }, [stxAddress]);
+  const networkMismatch = null;
 
   const loadDepositedBalance = useCallback(async () => {
     if (!stxAddress) {
@@ -267,11 +254,6 @@ export function StxActions() {
     [activeNetwork, refreshBalanceAfterTx],
   );
 
-  const handleMaxWithdraw = () => {
-    if (!depositedBalance || depositedBalance <= 0n) return;
-    setAmount(formatMicrostxToStx(depositedBalance));
-  };
-
   const submit = async (action: ActionType) => {
     if (!isConnected) {
       setFeedback("Connect your wallet first.");
@@ -292,12 +274,12 @@ export function StxActions() {
       }
     }
 
-    if (action === "deposit" && hasActiveDeposit) {
-      setFeedback("You must withdraw before making a new deposit.");
-      return;
-    }
-
-    if (action === "withdraw" && depositedBalance !== null && parsedAmount) {
+    if (
+      action === "withdraw" &&
+      depositedBalance !== null &&
+      depositedBalance > 0n &&
+      parsedAmount
+    ) {
       if (parsedAmount > depositedBalance) {
         setFeedback("Amount exceeds your deposited balance.");
         return;
@@ -367,97 +349,80 @@ export function StxActions() {
   };
 
   return (
-    <div className="w-full rounded-2xl border border-orange-100 bg-white/80 p-5 shadow-sm backdrop-blur sm:p-6">
+    <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-5 shadow-[0_24px_70px_rgba(30,12,6,0.55)] backdrop-blur-2xl sm:p-6">
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-600">
+        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-200/80">
           Lending pool
         </p>
-        <h2 className="text-2xl font-semibold text-slate-900">
+        <h2 className="text-2xl font-semibold text-white">
           Deposit, borrow, and manage STX
         </h2>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-orange-50/80">
           Contract: {STACKS_CONTRACT_ADDRESS}.{STACKS_CONTRACT_NAME}
         </p>
         {networkMismatch ? (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-100">
             {networkMismatch}
           </p>
         ) : null}
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <ActionCard title="Deposit & Withdraw" subtitle="STX liquidity">
-          <AmountField
-            label="Amount (STX)"
-            value={amount}
-            onChange={setAmount}
-            hint={
-              parsedAmount
-                ? `${parsedAmount.toString()} microstacks`
-                : "Enter a number with up to 6 decimals."
-            }
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <PrimaryButton
-              onClick={() => submit("deposit")}
-              disabled={!canSubmit || hasActiveDeposit}
-            >
-              Deposit STX
-            </PrimaryButton>
-            <SecondaryButton onClick={() => submit("withdraw")} disabled={!canSubmit}>
-              Withdraw STX
-            </SecondaryButton>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <GhostButton
-              onClick={handleMaxWithdraw}
-              disabled={
-                !isConnected ||
-                depositedBalance === null ||
-                depositedBalance <= 0n ||
-                isWorking
+        {mode !== "borrow" ? (
+          <ActionCard title="Deposit & Withdraw" subtitle="STX liquidity">
+            <AmountField
+              label="Amount (STX)"
+              value={amount}
+              onChange={setAmount}
+              hint={
+                parsedAmount
+                  ? `${parsedAmount.toString()} microstacks`
+                  : "Enter a number with up to 6 decimals."
               }
-            >
-              Max withdraw
-            </GhostButton>
-            {hasActiveDeposit ? (
-              <span className="text-xs text-orange-700">
-                You already have a deposit. Withdraw first to deposit again.
-              </span>
-            ) : null}
-          </div>
-        </ActionCard>
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PrimaryButton onClick={() => submit("deposit")} disabled={!canSubmit}>
+                Deposit STX
+              </PrimaryButton>
+              <SecondaryButton onClick={() => submit("withdraw")} disabled={!canSubmit}>
+                Withdraw STX
+              </SecondaryButton>
+            </div>
+          </ActionCard>
+        ) : null}
 
-        <ActionCard title="Borrow & Repay" subtitle="STX credit line">
-          <AmountField
-            label="Collateral amount"
-            value={collateralAmount}
-            onChange={setCollateralAmount}
-            hint={
-              parsedCollateralAmount
-                ? `${parsedCollateralAmount.toString()} microstacks`
-                : "Enter a number with up to 6 decimals."
-            }
-          />
-          <AmountField
-            label="Borrow amount (STX)"
-            value={borrowAmount}
-            onChange={setBorrowAmount}
-            hint={
-              parsedBorrowAmount
-                ? `${parsedBorrowAmount.toString()} microstacks`
-                : "Enter a number with up to 6 decimals."
-            }
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <PrimaryButton onClick={() => submit("borrow")} disabled={!canBorrow}>
-              Borrow STX
-            </PrimaryButton>
-            <SecondaryButton onClick={() => submit("repay")} disabled={!isConnected}>
-              Repay (full)
-            </SecondaryButton>
-          </div>
-        </ActionCard>
+        {mode !== "deposit" ? (
+          <ActionCard title="Borrow & Repay" subtitle="STX credit line">
+            <AmountField
+              label="Collateral amount"
+              value={collateralAmount}
+              onChange={setCollateralAmount}
+              hint={
+                parsedCollateralAmount
+                  ? `${parsedCollateralAmount.toString()} microstacks`
+                  : "Enter a number with up to 6 decimals."
+              }
+            />
+            <AmountField
+              label="Borrow amount (STX)"
+              value={borrowAmount}
+              onChange={setBorrowAmount}
+              hint={
+                parsedBorrowAmount
+                  ? `${parsedBorrowAmount.toString()} microstacks`
+                  : "Enter a number with up to 6 decimals."
+              }
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <PrimaryButton onClick={() => submit("borrow")} disabled={!canBorrow}>
+                Borrow STX
+              </PrimaryButton>
+              <SecondaryButton onClick={() => submit("repay")} disabled={!isConnected}>
+                Repay (full)
+              </SecondaryButton>
+            </div>
+          </ActionCard>
+        ) : null}
       </div>
 
       {!isConnected ? (
@@ -465,7 +430,7 @@ export function StxActions() {
           <button
             type="button"
             onClick={connect}
-            className="h-11 w-full rounded-xl border border-orange-200 text-sm font-semibold text-orange-600 transition hover:border-orange-300 hover:bg-orange-50 sm:w-auto sm:px-6"
+            className="h-11 w-full rounded-xl border border-orange-200/40 text-sm font-semibold text-orange-50 transition hover:border-orange-200/70 hover:bg-white/10 sm:w-auto sm:px-6"
             disabled={isLoading || isPending}
           >
             Connect wallet to continue
@@ -473,10 +438,8 @@ export function StxActions() {
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-xl bg-orange-50/70 px-4 py-3 text-sm text-slate-700">
-        <div>
-          Wallet: {stxAddress ? `${stxAddress}` : "Not connected"}
-        </div>
+      <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-orange-50/90">
+        <div>Wallet: {stxAddress ? `${stxAddress}` : "Not connected"}</div>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <span>
             Deposited:{" "}
@@ -500,12 +463,6 @@ export function StxActions() {
             {isBalanceLoading || isBorrowLoading ? "Loading..." : "Refresh"}
           </GhostButton>
         </div>
-        {borrowedBalance === 0n ? (
-          <div className="text-xs text-slate-500">
-            Borrowed balance is read from the on-chain map. The current borrow
-            function does not update it yet.
-          </div>
-        ) : null}
         <div>
           Repay amount:{" "}
           {borrowedBalance === null
@@ -519,27 +476,25 @@ export function StxActions() {
       </div>
 
       {balanceError ? (
-        <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <div className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           {balanceError}
         </div>
       ) : null}
       {borrowError ? (
-        <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <div className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           {borrowError}
         </div>
       ) : null}
 
       {feedback ? (
-        <div className="mt-4 rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-800">
+        <div className="mt-4 rounded-lg bg-orange-500/10 px-3 py-2 text-sm text-orange-100">
           {feedback}
         </div>
       ) : null}
 
       {lastTxStatus !== "idle" ? (
-        <div className="mt-3 rounded-lg border border-orange-100 bg-white px-3 py-2 text-sm text-slate-700">
-          <span className="font-semibold text-orange-700">
-            Tx status:
-          </span>{" "}
+        <div className="mt-3 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-orange-50/90">
+          <span className="font-semibold text-orange-200">Tx status:</span>{" "}
           {lastTxStatus}
           {lastTxError ? ` (${lastTxError})` : ""}
         </div>
@@ -550,7 +505,7 @@ export function StxActions() {
           href={explorerUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-flex text-sm font-medium text-orange-600 hover:text-orange-500"
+          className="mt-3 inline-flex text-sm font-medium text-orange-200 hover:text-orange-100"
         >
           View transaction on Explorer
         </a>
@@ -569,16 +524,16 @@ type AmountFieldProps = {
 function AmountField({ label, value, hint, onChange }: AmountFieldProps) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-orange-50/90">{label}</span>
       <input
         type="text"
         inputMode="decimal"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-12 rounded-xl border border-orange-100 bg-white px-4 text-base text-slate-900 outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+        className="h-12 rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition placeholder:text-orange-100/60 focus:border-orange-200/70 focus:ring-2 focus:ring-orange-400/30"
         placeholder="0.0"
       />
-      <span className="text-xs text-slate-500">{hint}</span>
+      <span className="text-xs text-orange-100/70">{hint}</span>
     </label>
   );
 }
@@ -591,10 +546,10 @@ type ActionCardProps = {
 
 function ActionCard({ title, subtitle, children }: ActionCardProps) {
   return (
-    <section className="rounded-2xl border border-orange-100 bg-white/90 p-4 shadow-sm sm:p-5">
+    <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_40px_rgba(24,12,6,0.4)] sm:p-5">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        <p className="text-xs uppercase tracking-[0.18em] text-orange-600">
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+        <p className="text-xs uppercase tracking-[0.22em] text-orange-200/80">
           {subtitle}
         </p>
       </div>
@@ -615,7 +570,7 @@ function PrimaryButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-12 rounded-xl bg-orange-500 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-orange-200"
+      className="h-12 rounded-xl bg-orange-500/90 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(249,115,22,0.35)] transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-orange-200/40"
     >
       {children}
     </button>
@@ -628,7 +583,7 @@ function SecondaryButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-12 rounded-xl border border-orange-200 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:bg-orange-50 disabled:cursor-not-allowed disabled:border-orange-100 disabled:text-slate-400"
+      className="h-12 rounded-xl border border-orange-200/40 text-sm font-semibold text-orange-50 transition hover:border-orange-200/70 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-slate-400"
     >
       {children}
     </button>
@@ -641,7 +596,7 @@ function GhostButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-9 rounded-xl border border-orange-100 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-orange-600 transition hover:border-orange-200 hover:bg-orange-50 disabled:cursor-not-allowed disabled:text-orange-200"
+      className="h-9 rounded-xl border border-white/10 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-orange-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-slate-500"
     >
       {children}
     </button>

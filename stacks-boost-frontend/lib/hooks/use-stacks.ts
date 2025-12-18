@@ -16,6 +16,7 @@ import {
   STACKS_APP_DETAILS,
   STACKS_MANIFEST_PATH,
   STACKS_REDIRECT_PATH,
+  STACKS_NETWORK,
 } from "@/lib/stacks-config";
 
 export type WalletStatus =
@@ -279,7 +280,10 @@ export function useStacks(): UseStacksResult {
     isConnected: state.status === "connected",
     isPending: state.status === "pending",
     isReady: isBrowser && hasHydrated.current,
-    stxAddress: state.addresses.testnet ?? state.addresses.mainnet,
+    stxAddress:
+      STACKS_NETWORK === "mainnet"
+        ? state.addresses.mainnet
+        : state.addresses.testnet,
     btcAddress: state.addresses.btc,
   };
 }

@@ -1,6 +1,6 @@
 # Stacks Boost
 
-Frontend for the Stacks Boost lending pool. Connect Leather or Xverse, deposit and withdraw STX, and trigger borrow/repay calls against the `stackslend-v1` contract.
+Frontend for the Stacks Boost lending pool on mainnet. Connect Leather or Xverse, deposit and withdraw STX, and trigger borrow/repay calls against the `stackslend-v1` contract.
 
 ## Stacks Builder Event (talen.protocol)
 
@@ -17,11 +17,11 @@ Stacks Boost is built for the talen.protocol Stacks Builder event. It demonstrat
 1. Connect a testnet wallet (Leather or Xverse).
 2. Deposit 1 STX (watch the tx status and explorer link).
 3. Refresh the deposited balance after confirmation.
-4. Use "Max withdraw" to withdraw the full amount.
+4. Withdraw the full amount.
 5. Trigger a Borrow with collateral + amount.
 6. Repay and observe status updates.
 
-Testnet faucet: `https://explorer.hiro.so/faucet?chain=testnet`
+Mainnet requires real STX.
 
 ## Features
 
@@ -62,9 +62,9 @@ The UI reads contract constants from:
 
 - `stacks-boost-frontend/lib/stacks-config.ts`
 
-Current defaults:
+Current defaults (mainnet):
 
-- Contract address: `ST1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXVPSAX13`
+- Contract address: `SP1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXRCD0S3K`
 - Contract name: `stackslend-v1`
 
 Update these values if you deploy to a new address.
@@ -100,7 +100,7 @@ The UI polls:
 
 1. Connect your wallet (Leather or Xverse).
 2. Deposit STX (only one active deposit at a time).
-3. Withdraw STX or use "Max withdraw".
+3. Withdraw STX.
 4. Borrow and repay from the Borrow card.
 5. Use Refresh to fetch the deposited balance from chain.
 
@@ -119,9 +119,7 @@ The UI polls:
 ## Troubleshooting
 
 - If a transaction fails with `(err u103)`, you already have a deposit.
-- If the balance is empty, confirm the wallet address prefix matches the network:
-  - `ST` = testnet
-  - `SP` = mainnet
+- If the balance is empty, confirm the wallet is on mainnet (`SP` prefix).
 - If tx status shows failed, open the explorer link for the full error code.
 - If Chainhooks do not deliver events, confirm your public callback URL and API key.
 

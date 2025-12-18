@@ -54,7 +54,7 @@ See `stacks-boost-contract/README.md` for contract build and deployment steps.
 
 ## Demo
 
-1. Connect wallet (Leather/Xverse)
+1. Connect wallet (Leather/Xverse, mainnet)
 2. Deposit STX and view tx status + explorer link
 3. Refresh balances (deposit/borrow)
 4. Trigger borrow/repay calls

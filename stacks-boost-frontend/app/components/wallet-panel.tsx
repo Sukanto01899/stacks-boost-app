@@ -43,20 +43,24 @@ export function WalletPanel() {
   }, [status]);
 
   return (
-    <div className="w-full rounded-2xl border border-slate-200 bg-white/60 p-6 shadow-sm backdrop-blur">
-      <div className="flex items-start justify-between gap-4">
+    <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-6 shadow-[0_24px_70px_rgba(30,12,6,0.55)] backdrop-blur-2xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-slate-500">Wallet status</p>
-          <p className="text-xl font-semibold text-slate-900">{statusCopy}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-200/70">
+            Wallet status
+          </p>
+          <p className="text-xl font-semibold text-white">{statusCopy}</p>
           {providerName ? (
-            <p className="text-sm text-slate-500">Provider: {providerName}</p>
+            <p className="text-sm text-slate-300/80">
+              Provider: {providerName}
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={refresh}
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/30 hover:bg-white/10"
             disabled={isLoading}
           >
             Refresh
@@ -65,7 +69,7 @@ export function WalletPanel() {
             <button
               type="button"
               onClick={disconnect}
-              className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+              className="rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/30 disabled:opacity-50"
               disabled={isLoading}
             >
               Disconnect
@@ -74,7 +78,7 @@ export function WalletPanel() {
             <button
               type="button"
               onClick={connect}
-              className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:opacity-50"
+              className="rounded-full bg-orange-500/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:opacity-50"
               disabled={isLoading || isPending}
             >
               {isPending ? "Opening wallet..." : "Connect wallet"}
@@ -83,27 +87,27 @@ export function WalletPanel() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 sm:grid-cols-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/70">
             STX Address
           </p>
-          <p className="mt-1 font-mono text-sm text-slate-900">
+          <p className="mt-1 font-mono text-sm text-white">
             {formatAddress(stxAddress)}
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/70">
             BTC Address
           </p>
-          <p className="mt-1 font-mono text-sm text-slate-900">
+          <p className="mt-1 font-mono text-sm text-white">
             {formatAddress(btcAddress)}
           </p>
         </div>
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-100">
           {error}
         </p>
       ) : null}

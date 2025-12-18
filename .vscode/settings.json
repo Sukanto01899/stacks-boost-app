@@ -1,0 +1,7 @@
+{
+  "clarity-lsp.clarityVersion": 4,
+  "clarity-lsp.clarity-version": 4,
+  "clarinet.clarityVersion": 4,
+  "clarity.clarityVersion": 4,
+  "clarity-lsp.enableExperimentalFeatures": true
+}
