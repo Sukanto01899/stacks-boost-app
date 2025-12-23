@@ -36,17 +36,12 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
-            contract-name: mock-oracle-v1
+            contract-name: mock-oracle-v3
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mock-oracle.clar
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: mock-sbtc-token
-            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/mock-sbtc-token.clar
-            clarity-version: 3
-        - emulated-contract-publish:
-            contract-name: stackslend-v1
+            contract-name: stackslend-v3
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/lending-pool.clar
             clarity-version: 3

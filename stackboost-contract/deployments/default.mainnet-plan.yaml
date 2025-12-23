@@ -1,30 +1,30 @@
 ---
 id: 0
-name: Testnet deployment
-network: testnet
-stacks-node: "https://api.testnet.hiro.so"
-bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332"
+name: Mainnet deployment
+network: mainnet
+stacks-node: "https://api.hiro.so"
+bitcoin-node: "http://blockstack:blockstacksystem@bitcoin.blockstack.com:8332"
 plan:
   batches:
     - id: 0
       transactions:
         - contract-publish:
             contract-name: mock-oracle-v4
-            expected-sender: ST1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXVPSAX13
+            expected-sender: SP1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXRCD0S3K
             cost: 26770
             path: "contracts\\mock-oracle.clar"
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: sbtc-deposit-dummy-v2
-            expected-sender: ST1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXVPSAX13
+            expected-sender: SP1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXRCD0S3K
             cost: 18160
             path: "contracts\\sbtc-deposit-dummy.clar"
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
             contract-name: stackslend-v4
-            expected-sender: ST1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXVPSAX13
+            expected-sender: SP1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXRCD0S3K
             cost: 141050
             path: "contracts\\lending-pool.clar"
             anchor-block-only: true

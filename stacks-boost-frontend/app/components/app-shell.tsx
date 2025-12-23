@@ -6,6 +6,7 @@ import { HeaderBar } from "./header-bar";
 import { StxActions } from "./stx-actions";
 
 type View = "dashboard" | "deposit" | "borrow";
+export type WalletProvider = "walletconnect" | "stacks";
 
 const navItems: Array<{ id: View; label: string; hint: string }> = [
   { id: "dashboard", label: "Dashboard", hint: "Balance + history" },
@@ -15,17 +16,18 @@ const navItems: Array<{ id: View; label: string; hint: string }> = [
 
 export function AppShell() {
   const [activeView, setActiveView] = useState<View>("dashboard");
+  const [activeWallet, setActiveWallet] = useState<WalletProvider | null>(null);
 
   const content = useMemo(() => {
     switch (activeView) {
       case "deposit":
-        return <StxActions mode="deposit" />;
+        return <StxActions mode="deposit" activeWallet={activeWallet} />;
       case "borrow":
-        return <StxActions mode="borrow" />;
+        return <StxActions mode="borrow" activeWallet={activeWallet} />;
       default:
-        return <DashboardPanel />;
+        return <DashboardPanel activeWallet={activeWallet} />;
     }
-  }, [activeView]);
+  }, [activeView, activeWallet]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#110907] text-slate-50">
@@ -37,7 +39,7 @@ export function AppShell() {
       </div>
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-10">
-        <HeaderBar />
+        <HeaderBar activeWallet={activeWallet} setActiveWallet={setActiveWallet} />
 
         <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
           <aside className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_50px_rgba(30,12,6,0.45)] backdrop-blur-2xl">

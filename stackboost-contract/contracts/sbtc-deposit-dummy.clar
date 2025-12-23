@@ -1,16 +1,19 @@
 ;; @clarity-version 3
 ;; ============================================
-;; Mock sBTC Token (SIP-010 compatible)
+;; Dummy sBTC Deposit (Testnet/Mainnet demo only)
 ;; ============================================
 
 (define-constant ERR_UNAUTHORIZED (err u100))
+(define-constant ERR_ALREADY_INITIALIZED (err u101))
+(define-constant INITIAL_SUPPLY u10000000000000)
 
 (define-data-var admin principal tx-sender)
+(define-data-var initialized bool false)
 
 (define-fungible-token sbtc)
 
 (define-read-only (get-name)
-  (ok "Mock sBTC")
+  (ok "Dummy sBTC")
 )
 
 (define-read-only (get-symbol)
@@ -41,6 +44,16 @@
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR_UNAUTHORIZED)
     (try! (ft-mint? sbtc amount recipient))
+    (ok true)
+  )
+)
+
+(define-public (init-supply)
+  (begin
+    (asserts! (is-eq tx-sender (var-get admin)) ERR_UNAUTHORIZED)
+    (asserts! (not (var-get initialized)) ERR_ALREADY_INITIALIZED)
+    (var-set initialized true)
+    (try! (ft-mint? sbtc INITIAL_SUPPLY (var-get admin)))
     (ok true)
   )
 )

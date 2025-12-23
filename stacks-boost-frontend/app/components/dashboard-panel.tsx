@@ -8,6 +8,7 @@ import {
   standardPrincipalCV,
   tupleCV,
 } from "@stacks/transactions";
+import { useWalletConnect } from "@/lib/hooks/use-walletconnect";
 import { useStacks } from "@/lib/hooks/use-stacks";
 import {
   STACKS_NETWORK_INSTANCE,
@@ -18,7 +19,6 @@ import {
   STACKS_SBTC_TOKEN_NAME,
 } from "@/lib/stacks-config";
 import { formatMicrostxToStx } from "@/lib/stx-utils";
-import { WalletPanel } from "./wallet-panel";
 
 type TxItem = {
   tx_id: string;
@@ -70,8 +70,17 @@ function extractMapAmount(parsed: unknown): MapAmount {
   return amount as MapAmount;
 }
 
-export function DashboardPanel() {
-  const { stxAddress, isConnected } = useStacks();
+type DashboardPanelProps = {
+  activeWallet: "walletconnect" | "stacks" | null;
+};
+
+export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
+  const walletConnect = useWalletConnect();
+  const stacks = useStacks();
+  const stxAddress =
+    activeWallet === "stacks" ? stacks.stxAddress : walletConnect.stxAddress;
+  const isConnected =
+    activeWallet === "stacks" ? stacks.isConnected : walletConnect.isConnected;
   const [balance, setBalance] = useState<bigint | null>(null);
   const [sbtcBalance, setSbtcBalance] = useState<bigint | null>(null);
   const [depositBalance, setDepositBalance] = useState<bigint | null>(null);
@@ -273,7 +282,6 @@ export function DashboardPanel() {
         ) : null}
       </div>
 
-      <WalletPanel />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { openContractCall } from "@stacks/connect";
 import {
   ClarityType,
+  cvToHex,
   cvToValue,
   fetchContractMapEntry,
   PostConditionMode,
@@ -14,8 +15,8 @@ import {
   uintCV,
 } from "@stacks/transactions";
 
-import { useStacks } from "@/lib/hooks/use-stacks";
 import { useWalletConnect } from "@/lib/hooks/use-walletconnect";
+import { useStacks } from "@/lib/hooks/use-stacks";
 import {
   STACKS_APP_DETAILS,
   STACKS_CONTRACT_ADDRESS,
@@ -63,8 +64,14 @@ function delay(ms: number) {
 
 type StxActionsMode = "all" | "deposit" | "borrow";
 
-export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
-  const { isConnected, isLoading, isPending, stxAddress, connect } = useStacks();
+type StxActionsProps = {
+  mode?: StxActionsMode;
+  activeWallet: "walletconnect" | "stacks" | null;
+};
+
+export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
+  const walletConnect = useWalletConnect();
+  const stacks = useStacks();
   const {
     isConnected: isWcConnected,
     isPending: isWcPending,
@@ -75,7 +82,7 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     connect: connectWalletConnect,
     disconnect: disconnectWalletConnect,
     request: wcRequest,
-  } = useWalletConnect();
+  } = walletConnect;
   const [amount, setAmount] = useState("1");
   const [borrowAmount, setBorrowAmount] = useState("1");
   const [collateralAmount, setCollateralAmount] = useState("1");
@@ -108,12 +115,33 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     [collateralAmount],
   );
   const parsedWcAmount = useMemo(() => parseStxToMicrostx(wcAmount), [wcAmount]);
+  const hasActiveWallet = activeWallet !== null;
+  const useStacksWallet = activeWallet === "stacks";
+  const isContractWalletConnected = hasActiveWallet
+    ? useStacksWallet
+      ? stacks.isConnected
+      : isWcConnected
+    : false;
+  const isContractWalletPending = hasActiveWallet
+    ? useStacksWallet
+      ? stacks.isPending
+      : isWcPending
+    : false;
+  const isContractWalletLoading = hasActiveWallet
+    ? useStacksWallet
+      ? stacks.isLoading
+      : isWcLoading
+    : false;
   const canSubmit =
-    isConnected && !isLoading && !isPending && !isWorking && !!parsedAmount;
+    isContractWalletConnected &&
+    !isContractWalletLoading &&
+    !isContractWalletPending &&
+    !isWorking &&
+    !!parsedAmount;
   const canBorrow =
-    isConnected &&
-    !isLoading &&
-    !isPending &&
+    isContractWalletConnected &&
+    !isContractWalletLoading &&
+    !isContractWalletPending &&
     !isWorking &&
     !!parsedBorrowAmount &&
     !!parsedCollateralAmount;
@@ -128,6 +156,7 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
   const activeNetwork = STACKS_NETWORK_INSTANCE;
 
   const networkLabel = STACKS_NETWORK === "mainnet" ? "Mainnet" : "Testnet";
+  const activeStxAddress = useStacksWallet ? stacks.stxAddress : wcStxAddress;
 
   const explorerUrl = useMemo(() => {
     if (!lastTxId) return null;
@@ -137,7 +166,7 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
   const networkMismatch = null;
 
   const loadDepositedBalance = useCallback(async () => {
-    if (!stxAddress) {
+    if (!activeStxAddress) {
       setDepositedBalance(null);
       setBalanceError(null);
       return;
@@ -147,7 +176,7 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     setBalanceError(null);
 
     try {
-      const key = tupleCV({ user: standardPrincipalCV(stxAddress) });
+      const key = tupleCV({ user: standardPrincipalCV(activeStxAddress) });
       const entry = await fetchContractMapEntry({
         contractAddress: STACKS_CONTRACT_ADDRESS,
         contractName: STACKS_CONTRACT_NAME,
@@ -171,10 +200,10 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     } finally {
       setIsBalanceLoading(false);
     }
-  }, [activeNetwork, stxAddress]);
+  }, [activeNetwork, activeStxAddress]);
 
   const loadBorrowedBalance = useCallback(async () => {
-    if (!stxAddress) {
+    if (!activeStxAddress) {
       setBorrowedBalance(null);
       setBorrowError(null);
       return;
@@ -184,7 +213,7 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     setBorrowError(null);
 
     try {
-      const key = tupleCV({ user: standardPrincipalCV(stxAddress) });
+      const key = tupleCV({ user: standardPrincipalCV(activeStxAddress) });
       const entry = await fetchContractMapEntry({
         contractAddress: STACKS_CONTRACT_ADDRESS,
         contractName: STACKS_CONTRACT_NAME,
@@ -208,10 +237,10 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
     } finally {
       setIsBorrowLoading(false);
     }
-  }, [activeNetwork, stxAddress]);
+  }, [activeNetwork, activeStxAddress]);
 
   const refreshBalanceAfterTx = useCallback(async () => {
-    if (!isConnected) return;
+    if (!isContractWalletConnected) return;
     await loadDepositedBalance();
     await loadBorrowedBalance();
     for (const waitMs of [4000, 6000, 10000]) {
@@ -219,10 +248,10 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
       await loadDepositedBalance();
       await loadBorrowedBalance();
     }
-  }, [isConnected, loadBorrowedBalance, loadDepositedBalance]);
+  }, [isContractWalletConnected, loadBorrowedBalance, loadDepositedBalance]);
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!isContractWalletConnected) {
       setDepositedBalance(null);
       setBalanceError(null);
       setBorrowedBalance(null);
@@ -232,16 +261,16 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
 
     void loadDepositedBalance();
     void loadBorrowedBalance();
-  }, [isConnected, loadBorrowedBalance, loadDepositedBalance]);
+  }, [isContractWalletConnected, loadBorrowedBalance, loadDepositedBalance]);
 
   useEffect(() => {
-    if (!isConnected) return undefined;
+    if (!isContractWalletConnected) return undefined;
     const interval = setInterval(() => {
       void loadDepositedBalance();
       void loadBorrowedBalance();
     }, 20000);
     return () => clearInterval(interval);
-  }, [isConnected, loadBorrowedBalance, loadDepositedBalance]);
+  }, [isContractWalletConnected, loadBorrowedBalance, loadDepositedBalance]);
 
   const pollTransaction = useCallback(
     async (txId: string) => {
@@ -279,7 +308,11 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
   );
 
   const submit = async (action: ActionType) => {
-    if (!isConnected) {
+    if (!hasActiveWallet) {
+      setFeedback("Select a wallet in the header first.");
+      return;
+    }
+    if (!isContractWalletConnected) {
       setFeedback("Connect your wallet first.");
       return;
     }
@@ -336,34 +369,60 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
                 parsedAmount ?? 0n,
               )} STX.`;
 
-      await openContractCall({
-        contractAddress: STACKS_CONTRACT_ADDRESS,
-        contractName: STACKS_CONTRACT_NAME,
-        functionName:
-          action === "deposit"
-            ? "deposit-stx"
-            : action === "withdraw"
-              ? "withdraw-stx"
-              : action === "borrow"
-                ? "borrow-stx"
-                : "repay",
-        functionArgs: args,
-        network: activeNetwork,
-        appDetails: STACKS_APP_DETAILS,
-        postConditionMode: PostConditionMode.Allow,
-        onFinish: (data) => {
-          setLastTxId(data.txId);
-          setLastTxStatus("pending");
-          setLastTxError(null);
-          setFeedback(message);
-          setIsWorking(false);
-          void pollTransaction(data.txId);
-        },
-        onCancel: () => {
-          setFeedback("Transaction cancelled.");
-          setIsWorking(false);
-        },
-      });
+      const functionName =
+        action === "deposit"
+          ? "deposit-stx"
+          : action === "withdraw"
+            ? "withdraw-stx"
+            : action === "borrow"
+              ? "borrow-stx"
+              : "repay";
+
+      if (useStacksWallet) {
+        await openContractCall({
+          contractAddress: STACKS_CONTRACT_ADDRESS,
+          contractName: STACKS_CONTRACT_NAME,
+          functionName,
+          functionArgs: args,
+          network: activeNetwork,
+          appDetails: STACKS_APP_DETAILS,
+          postConditionMode: PostConditionMode.Allow,
+          onFinish: (data) => {
+            setLastTxId(data.txId);
+            setLastTxStatus("pending");
+            setLastTxError(null);
+            setFeedback(message);
+            setIsWorking(false);
+            void pollTransaction(data.txId);
+          },
+          onCancel: () => {
+            setFeedback("Transaction cancelled.");
+            setIsWorking(false);
+          },
+        });
+      } else {
+        const result = await wcRequest<{
+          txid?: string;
+          transaction?: string;
+        }>({
+          method: "stx_callContract",
+          params: {
+            contract: `${STACKS_CONTRACT_ADDRESS}.${STACKS_CONTRACT_NAME}`,
+            functionName,
+            functionArgs: args.map((arg) => cvToHex(arg)),
+          },
+        });
+
+        const txId = result?.txid;
+        setLastTxId(txId ?? null);
+        setLastTxStatus("pending");
+        setLastTxError(null);
+        setFeedback(message);
+        setIsWorking(false);
+        if (txId) {
+          void pollTransaction(txId);
+        }
+      }
     } catch (error) {
       setFeedback(
         error instanceof Error ? error.message : "Failed to open wallet.",
@@ -424,6 +483,16 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
         <p className="text-sm text-orange-50/80">
           Contract: {STACKS_CONTRACT_ADDRESS}.{STACKS_CONTRACT_NAME}
         </p>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-orange-100/70">
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            Active wallet:{" "}
+            {activeWallet === "stacks"
+              ? stacks.providerName ?? "Stacks wallet"
+              : activeWallet === "walletconnect"
+                ? "WalletConnect"
+                : "None"}
+          </span>
+        </div>
         {networkMismatch ? (
           <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-100">
             {networkMismatch}
@@ -481,7 +550,10 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
               <PrimaryButton onClick={() => submit("borrow")} disabled={!canBorrow}>
                 Borrow STX
               </PrimaryButton>
-              <SecondaryButton onClick={() => submit("repay")} disabled={!isConnected}>
+              <SecondaryButton
+                onClick={() => submit("repay")}
+                disabled={!isContractWalletConnected}
+              >
                 Repay (full)
               </SecondaryButton>
             </div>
@@ -561,21 +633,37 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
         </ActionCard>
       </div>
 
-      {!isConnected ? (
+      {!isContractWalletConnected ? (
         <div className="mt-4">
           <button
             type="button"
-            onClick={connect}
+            onClick={() => {
+              if (!hasActiveWallet) {
+                setFeedback("Select a wallet in the header first.");
+                return;
+              }
+              if (useStacksWallet) {
+                void stacks.connect();
+              } else {
+                void connectWalletConnect();
+              }
+            }}
             className="h-11 w-full rounded-xl border border-orange-200/40 text-sm font-semibold text-orange-50 transition hover:border-orange-200/70 hover:bg-white/10 sm:w-auto sm:px-6"
-            disabled={isLoading || isPending}
+            disabled={isContractWalletLoading || isContractWalletPending}
           >
-            Connect wallet to continue
+            {isContractWalletPending
+              ? "Opening wallet..."
+              : !hasActiveWallet
+                ? "Select wallet"
+                : useStacksWallet
+                  ? "Connect Leather / Xverse"
+                  : "Connect WalletConnect"}
           </button>
         </div>
       ) : null}
 
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-orange-50/90">
-        <div>Wallet: {stxAddress ? `${stxAddress}` : "Not connected"}</div>
+        <div>Wallet: {activeStxAddress ? `${activeStxAddress}` : "Not connected"}</div>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <span>
             Deposited:{" "}
@@ -594,7 +682,9 @@ export function StxActions({ mode = "all" }: { mode?: StxActionsMode }) {
               void loadDepositedBalance();
               void loadBorrowedBalance();
             }}
-            disabled={!isConnected || isBalanceLoading || isBorrowLoading}
+            disabled={
+              !isContractWalletConnected || isBalanceLoading || isBorrowLoading
+            }
           >
             {isBalanceLoading || isBorrowLoading ? "Loading..." : "Refresh"}
           </GhostButton>

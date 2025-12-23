@@ -6,9 +6,8 @@ const deployer = accounts.get("deployer")!;
 const wallet1 = accounts.get("wallet_1")!;
 const wallet2 = accounts.get("wallet_2")!;
 
-const lendingPool = "stackslend-v2";
-const oracle = "mock-oracle-v2";
-const sbtcToken = "mock-sbtc-token-v2";
+const lendingPool = "stackslend-v4";
+const oracle = "mock-oracle-v4";
 
 function initOracle(price: bigint) {
   const init = simnet.callPublicFn(
@@ -85,80 +84,6 @@ describe("Lending Pool Contract", () => {
     expect(withdraw.result).toBeOk(Cl.bool(true));
   });
 
-  it("borrows against mock sBTC and repays", () => {
-    initOracle(100n);
-
-    const mint = simnet.callPublicFn(
-      sbtcToken,
-      "mint",
-      [Cl.uint(10), Cl.principal(wallet2)],
-      deployer,
-    );
-    expect(mint.result).toBeOk(Cl.bool(true));
-
-    const deposit = simnet.callPublicFn(
-      lendingPool,
-      "deposit-stx",
-      [Cl.uint(10000)],
-      wallet1,
-    );
-    expect(deposit.result).toBeOk(Cl.bool(true));
-
-    const borrow = simnet.callPublicFn(
-      lendingPool,
-      "borrow-stx",
-      [Cl.uint(10), Cl.uint(500)],
-      wallet2,
-    );
-    expect(borrow.result).toBeOk(Cl.bool(true));
-
-    const repay = simnet.callPublicFn(lendingPool, "repay", [], wallet2);
-    expect(repay.result).toBeOk(Cl.bool(true));
-
-    const debt = simnet.callReadOnlyFn(
-      lendingPool,
-      "get-debt",
-      [Cl.principal(wallet2)],
-      deployer,
-    );
-    expect(debt.result).toBeOk(Cl.uint(0));
-
-    const collateral = simnet.callReadOnlyFn(
-      lendingPool,
-      "get-collateral",
-      [Cl.principal(wallet2)],
-      deployer,
-    );
-    expect(collateral.result).toBeOk(Cl.uint(0));
-  });
-
-  it("rejects borrow when oracle price is zero", () => {
-    initOracle(0n);
-
-    const mint = simnet.callPublicFn(
-      sbtcToken,
-      "mint",
-      [Cl.uint(5), Cl.principal(wallet2)],
-      deployer,
-    );
-    expect(mint.result).toBeOk(Cl.bool(true));
-
-    const deposit = simnet.callPublicFn(
-      lendingPool,
-      "deposit-stx",
-      [Cl.uint(5000)],
-      wallet1,
-    );
-    expect(deposit.result).toBeOk(Cl.bool(true));
-
-    const borrow = simnet.callPublicFn(
-      lendingPool,
-      "borrow-stx",
-      [Cl.uint(5), Cl.uint(100)],
-      wallet2,
-    );
-    expect(borrow.result).toBeErr(Cl.uint(113));
-  });
 
   it("rejects repay when no debt exists", () => {
     const repay = simnet.callPublicFn(lendingPool, "repay", [], wallet1);

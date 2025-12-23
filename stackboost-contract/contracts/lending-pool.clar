@@ -1,6 +1,6 @@
 ;; @clarity-version 3
 ;; ============================================
-;; Stacks Boost - Lending Pool (Demo + Mock sBTC)
+;; Stacks Boost - Lending Pool (sBTC Deposit)
 ;; ============================================
 
 ;; ============================================
@@ -29,7 +29,7 @@
 (define-constant LIQUIDATION_PENALTY_PERCENTAGE u10)
 (define-constant ONE_YEAR_IN_SECS u31556952)
 (define-constant DEFAULT_ADMIN 'SP1G4ZDXED8XM2XJ4Q4GJ7F4PG4EJQ1KKXRCD0S3K)
-(define-constant DEFAULT_SBTC_TOKEN .mock-sbtc-token-v2)
+(define-constant SBTC_DEPOSIT_CONTRACT .sbtc-deposit-dummy-v2)
 
 ;; ============================================
 ;; Data Variables
@@ -45,7 +45,6 @@
 (define-data-var interest-rate-percentage uint INTEREST_RATE_PERCENTAGE)
 (define-data-var liquidation-threshold-percentage uint LIQUIDATION_THRESHOLD_PERCENTAGE)
 (define-data-var liquidation-penalty-percentage uint LIQUIDATION_PENALTY_PERCENTAGE)
-(define-data-var sbtc-token principal DEFAULT_SBTC_TOKEN)
 
 ;; ============================================
 ;; Maps
@@ -75,7 +74,7 @@
 ;; Public Functions
 ;; ============================================
 (define-public (get-sbtc-stx-price)
-  (contract-call? .mock-oracle-v2 get-price)
+  (contract-call? .mock-oracle-v4 get-price)
 )
 
 (define-public (deposit-stx (amount uint))
@@ -179,7 +178,7 @@
 
       (if (> collateral-amount u0)
         (unwrap!
-          (contract-call? .mock-sbtc-token-v2 transfer collateral-amount tx-sender (contract-principal) none)
+          (contract-call? SBTC_DEPOSIT_CONTRACT transfer collateral-amount tx-sender (contract-principal) none)
           ERR_INVALID_SBTC_CONTRACT
         )
         true
@@ -233,7 +232,7 @@
 
       (if (> collateral-amount u0)
         (unwrap!
-          (as-contract (contract-call? .mock-sbtc-token-v2 transfer collateral-amount (contract-principal) caller none))
+          (as-contract (contract-call? SBTC_DEPOSIT_CONTRACT transfer collateral-amount (contract-principal) caller none))
           ERR_INVALID_SBTC_CONTRACT
         )
         true
@@ -275,7 +274,7 @@
         )
         (unwrap! (stx-transfer? repay-amount tx-sender (contract-principal)) (err u1))
         (unwrap!
-          (as-contract (contract-call? .mock-sbtc-token-v2 transfer collateral-amount (contract-principal) liquidator none))
+          (as-contract (contract-call? SBTC_DEPOSIT_CONTRACT transfer collateral-amount (contract-principal) liquidator none))
           ERR_INVALID_SBTC_CONTRACT
         )
 
@@ -340,9 +339,6 @@
   })
 )
 
-(define-read-only (get-sbtc-token)
-  (ok (var-get sbtc-token))
-)
 
 ;; ============================================
 ;; Admin Functions
@@ -383,13 +379,6 @@
   )
 )
 
-(define-public (set-sbtc-token (new-token principal))
-  (begin
-    (asserts! (is-eq tx-sender (var-get admin)) ERR_UNAUTHORIZED)
-    (var-set sbtc-token new-token)
-    (ok true)
-  )
-)
 
 ;; ============================================
 ;; Private Functions
