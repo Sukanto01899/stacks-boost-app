@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { DashboardPanel } from "./dashboard-panel";
 import { HeaderBar } from "./header-bar";
 import { StxActions } from "./stx-actions";
+import { useContractVerification } from "@/lib/contract-verification";
 
 type View = "dashboard" | "deposit" | "borrow";
 export type WalletProvider = "walletconnect" | "stacks";
@@ -17,6 +18,45 @@ const navItems: Array<{ id: View; label: string; hint: string }> = [
 export function AppShell() {
   const [activeView, setActiveView] = useState<View>("dashboard");
   const [activeWallet, setActiveWallet] = useState<WalletProvider | null>(null);
+  const { isVerified, error: verificationError, retry } = useContractVerification();
+
+  // Show loading state while verifying
+  if (isVerified === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#110907]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-orange-200 text-lg">Verifying contract...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if verification failed
+  if (isVerified === false) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#110907]">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="text-6xl mb-6">❌</div>
+          <h1 className="text-3xl font-bold text-red-400 mb-4">
+            Contract Verification Failed
+          </h1>
+          <p className="text-orange-200/80 mb-2">
+            {verificationError || 'Unable to connect to the lending pool contract.'}
+          </p>
+          <p className="text-orange-100/60 text-sm mb-6">
+            Please check your network settings and ensure the contract address is correct.
+          </p>
+          <button
+            onClick={retry}
+            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const content = useMemo(() => {
     switch (activeView) {

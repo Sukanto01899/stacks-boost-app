@@ -10,6 +10,9 @@ import {
   cvToValue,
   fetchContractMapEntry,
   PostConditionMode,
+  makeStandardSTXPostCondition,
+  makeContractSTXPostCondition,
+  FungibleConditionCode,
   standardPrincipalCV,
   tupleCV,
   uintCV,
@@ -378,6 +381,52 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
               ? "borrow-stx"
               : "repay";
 
+      // Build post-conditions for security
+      const userAddress = useStacksWallet ? stacks.stxAddress : wcStxAddress;
+      const postConditions = [];
+
+      if (userAddress) {
+        if (action === "deposit" && parsedAmount) {
+          // User sends exact amount to contract
+          postConditions.push(
+            makeStandardSTXPostCondition(
+              userAddress,
+              FungibleConditionCode.Equal,
+              parsedAmount
+            )
+          );
+        } else if (action === "withdraw" && parsedAmount) {
+          // Contract sends exact amount to user
+          postConditions.push(
+            makeContractSTXPostCondition(
+              STACKS_CONTRACT_ADDRESS,
+              STACKS_CONTRACT_NAME,
+              FungibleConditionCode.Equal,
+              parsedAmount
+            )
+          );
+        } else if (action === "borrow" && parsedBorrowAmount) {
+          // Contract sends borrowed amount to user
+          postConditions.push(
+            makeContractSTXPostCondition(
+              STACKS_CONTRACT_ADDRESS,
+              STACKS_CONTRACT_NAME,
+              FungibleConditionCode.Equal,
+              parsedBorrowAmount
+            )
+          );
+        } else if (action === "repay" && borrowedBalance) {
+          // User sends at least borrowed amount (includes interest)
+          postConditions.push(
+            makeStandardSTXPostCondition(
+              userAddress,
+              FungibleConditionCode.GreaterOrEqual,
+              borrowedBalance
+            )
+          );
+        }
+      }
+
       if (useStacksWallet) {
         await openContractCall({
           contractAddress: STACKS_CONTRACT_ADDRESS,
@@ -386,7 +435,8 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
           functionArgs: args,
           network: activeNetwork,
           appDetails: STACKS_APP_DETAILS,
-          postConditionMode: PostConditionMode.Allow,
+          postConditions,
+          postConditionMode: PostConditionMode.Deny,
           onFinish: (data) => {
             setLastTxId(data.txId);
             setLastTxStatus("pending");
@@ -396,9 +446,24 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
             void pollTransaction(data.txId);
           },
           onCancel: () => {
-            setFeedback("Transaction cancelled.");
+            console.info('Transaction cancelled by user');
+            setFeedback("Transaction cancelled by user.");
+            setLastTxStatus("cancelled");
             setIsWorking(false);
           },
+        }).catch((error) => {
+          if (error?.message !== "cancel" && error !== "cancel") {
+            console.error('Transaction error:', error);
+            setFeedback(
+              error instanceof Error ? `Error: ${error.message}` : "Transaction failed."
+            );
+            setLastTxError(error instanceof Error ? error.message : "Unknown error");
+          } else {
+            console.info('Transaction cancelled by user');
+            setFeedback("Transaction cancelled by user.");
+            setLastTxStatus("cancelled");
+          }
+          setIsWorking(false);
         });
       } else {
         const result = await wcRequest<{
