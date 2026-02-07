@@ -36,6 +36,7 @@
   (begin
     (asserts! (is-eq sender tx-sender) ERR_UNAUTHORIZED)
     (try! (ft-transfer? sbtc amount sender recipient))
+    (print {event: "transfer", from: sender, to: recipient, amount: amount})
     (ok true)
   )
 )
@@ -44,6 +45,7 @@
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR_UNAUTHORIZED)
     (try! (ft-mint? sbtc amount recipient))
+    (print {event: "mint", to: recipient, amount: amount, by: tx-sender})
     (ok true)
   )
 )
@@ -54,6 +56,7 @@
     (asserts! (not (var-get initialized)) ERR_ALREADY_INITIALIZED)
     (var-set initialized true)
     (try! (ft-mint? sbtc INITIAL_SUPPLY (var-get admin)))
+    (print {event: "init-supply", admin: tx-sender, amount: INITIAL_SUPPLY})
     (ok true)
   )
 )
@@ -62,6 +65,7 @@
   (begin
     (asserts! (is-eq tx-sender owner) ERR_UNAUTHORIZED)
     (try! (ft-burn? sbtc amount owner))
+    (print {event: "burn", from: owner, amount: amount})
     (ok true)
   )
 )
@@ -70,6 +74,7 @@
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) ERR_UNAUTHORIZED)
     (var-set admin new-admin)
+    (print {event: "set-admin", old-admin: tx-sender, new-admin: new-admin})
     (ok true)
   )
 )

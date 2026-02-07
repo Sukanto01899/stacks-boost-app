@@ -48,6 +48,7 @@
       ;; Set initialized to true
       (var-set initialized true)
       
+      (print {event: "initialize", owner: owner-principal, updater: new-updater, block: block-height})
       ;; Return success
       (ok true)
     )
@@ -69,7 +70,7 @@
     
     ;; Set btc-stx-price to new-price
     (var-set btc-stx-price new-price)
-    
+    (print {event: "update-price", updater: tx-sender, price: new-price, block: block-height})
     ;; Return success
     (ok true)
   )
