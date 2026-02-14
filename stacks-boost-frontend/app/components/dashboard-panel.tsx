@@ -192,7 +192,7 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-200/80">
               Dashboard
             </p>
-            <h2 className="text-2xl font-semibold text-white">
+            <h2 className="font-serif text-2xl font-semibold text-white">
               Wallet overview
             </h2>
             <p className="text-sm text-orange-100/70">
@@ -246,32 +246,60 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/80">
-              Recent transactions
-            </p>
-            {transactions.length === 0 ? (
-              <p className="mt-3 text-sm text-orange-100/70">
-                {isConnected ? "No recent transactions." : "Connect wallet to view."}
+          <div className="grid gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/80">
+                Recent transactions
               </p>
-            ) : (
-              <div className="mt-3 grid gap-2">
-                {transactions.map((tx) => (
+              {transactions.length === 0 ? (
+                <p className="mt-3 text-sm text-orange-100/70">
+                  {isConnected ? "No recent transactions." : "Connect wallet to view."}
+                </p>
+              ) : (
+                <div className="mt-3 grid gap-2">
+                  {transactions.map((tx) => (
+                    <div
+                      key={tx.tx_id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-orange-50/90"
+                    >
+                      <span className="font-mono">{shortTx(tx.tx_id)}</span>
+                      <span className="text-xs uppercase tracking-[0.22em] text-orange-100/70">
+                        {tx.tx_type}
+                      </span>
+                      <span className="text-xs text-orange-100/70">
+                        {tx.tx_status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/80">
+                Protocol pulse
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {[
+                  { label: "Risk score", value: "Low" },
+                  { label: "Oracle status", value: "Healthy" },
+                  { label: "LTV cap", value: "65%" },
+                  { label: "Liquidations", value: "0 today" },
+                ].map((item) => (
                   <div
-                    key={tx.tx_id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-orange-50/90"
+                    key={item.label}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
                   >
-                    <span className="font-mono">{shortTx(tx.tx_id)}</span>
-                    <span className="text-xs uppercase tracking-[0.22em] text-orange-100/70">
-                      {tx.tx_type}
-                    </span>
-                    <span className="text-xs text-orange-100/70">
-                      {tx.tx_status}
-                    </span>
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-orange-100/70">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {item.value}
+                    </p>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -281,7 +309,6 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
           </div>
         ) : null}
       </div>
-
     </div>
   );
 }

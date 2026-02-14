@@ -476,12 +476,12 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
   };
 
   return (
-    <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-5 shadow-[0_24px_70px_rgba(30,12,6,0.55)] backdrop-blur-2xl sm:p-6">
+    <div className="w-full rounded-3xl border border-white/15 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-5 shadow-[0_24px_70px_rgba(30,12,6,0.55)] backdrop-blur-2xl sm:p-6">
       <div className="flex flex-col gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.32em] text-orange-200/80">
           Lending pool
         </p>
-        <h2 className="text-2xl font-semibold text-white">
+        <h2 className="font-serif text-2xl font-semibold text-white">
           Deposit, borrow, and manage STX
         </h2>
         <p className="text-sm text-orange-50/80">
@@ -798,7 +798,7 @@ type ActionCardProps = {
 
 function ActionCard({ title, subtitle, children }: ActionCardProps) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_40px_rgba(24,12,6,0.4)] sm:p-5">
+    <section className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4 shadow-[0_20px_40px_rgba(24,12,6,0.4)] sm:p-5">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-white">{title}</h3>
         <p className="text-xs uppercase tracking-[0.22em] text-orange-200/80">
@@ -822,7 +822,7 @@ function PrimaryButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-12 rounded-xl bg-orange-500/90 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(249,115,22,0.35)] transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-orange-200/40"
+      className="h-12 rounded-xl bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(249,115,22,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:from-orange-200/40 disabled:to-orange-200/40"
     >
       {children}
     </button>
@@ -835,7 +835,7 @@ function SecondaryButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-12 rounded-xl border border-orange-200/40 text-sm font-semibold text-orange-50 transition hover:border-orange-200/70 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-slate-400"
+      className="h-12 rounded-xl border border-orange-200/40 bg-white/5 text-sm font-semibold text-orange-50 transition hover:border-orange-200/70 hover:bg-white/10 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-slate-400"
     >
       {children}
     </button>
@@ -848,7 +848,7 @@ function GhostButton({ children, onClick, disabled }: ButtonProps) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-9 rounded-xl border border-white/10 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-orange-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-slate-500"
+      className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-semibold uppercase tracking-[0.22em] text-orange-100 transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:text-slate-500"
     >
       {children}
     </button>

@@ -36,17 +36,17 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
-            contract-name: mock-oracle-v4
+            contract-name: mock-oracle-v5
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: "contracts\\mock-oracle-v1.clar"
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: sbtc-deposit-dummy-v2
+            contract-name: sbtc-deposit-dummy-v5
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: "contracts\\sbtc-deposit-dummy-v1.clar"
             clarity-version: 3
         - emulated-contract-publish:
-            contract-name: stackslend-v4
+            contract-name: stackslend-v5
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: "contracts\\lending-pool-v1.clar"
             clarity-version: 3

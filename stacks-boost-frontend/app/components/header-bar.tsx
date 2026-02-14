@@ -96,17 +96,27 @@ export function HeaderBar({ activeWallet, setActiveWallet }: HeaderBarProps) {
   }, []);
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/10 px-5 py-4 shadow-[0_18px_50px_rgba(30,12,6,0.45)] backdrop-blur-2xl">
-      <div className="min-w-[200px]">
-        <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-200/80">
-          Stacks Boost
-        </p>
-        <h1 className="text-xl font-semibold text-white sm:text-2xl">
-          Stacks Boost Lending
-        </h1>
-        <p className="text-xs text-orange-100/70">
-          Network: {STACKS_NETWORK === "mainnet" ? "Mainnet" : "Testnet"}
-        </p>
+    <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-6 py-5 shadow-[0_22px_60px_rgba(30,12,6,0.5)] backdrop-blur-2xl">
+      <div className="flex min-w-[240px] items-center gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-orange-200/30 bg-orange-500/20">
+          <span className="font-serif text-lg text-orange-100">SB</span>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-orange-200/80">
+            Stacks Boost
+          </p>
+          <h1 className="text-xl font-semibold text-white sm:text-2xl">
+            Stacks Boost Lending
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-orange-100/70">
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+              Network: {STACKS_NETWORK === "mainnet" ? "Mainnet" : "Testnet"}
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+              {statusLabel}
+            </span>
+          </div>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-orange-100/80">
@@ -160,11 +170,11 @@ export function HeaderBar({ activeWallet, setActiveWallet }: HeaderBarProps) {
       {isModalOpen && isMounted
         ? createPortal(
             <div
-              className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
               onClick={() => setIsModalOpen(false)}
             >
               <div
-                className="pointer-events-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#1a0f0b] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+                className="pointer-events-auto w-full max-w-sm rounded-3xl border border-white/10 bg-[#160d0a] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3">
