@@ -20,3 +20,18 @@ export function formatMicrostxToStx(value: bigint): string {
   const fractionText = fraction.toString().padStart(6, "0").replace(/0+$/, "");
   return `${whole.toString()}.${fractionText}`;
 }
+
+export function microstxToStxNumber(value: bigint | null): number {
+  if (!value) return 0;
+  return Number(value) / 1_000_000;
+}
+
+export function formatUsd(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "-";
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: value >= 1 ? 2 : 4,
+  });
+  return formatter.format(value);
+}

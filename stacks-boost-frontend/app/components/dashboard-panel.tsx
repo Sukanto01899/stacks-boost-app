@@ -10,6 +10,7 @@ import {
 } from "@stacks/transactions";
 import { useWalletConnect } from "@/lib/hooks/use-walletconnect";
 import { useStacks } from "@/lib/hooks/use-stacks";
+import { usePriceFeed } from "@/lib/hooks/use-price-feed";
 import {
   STACKS_NETWORK_INSTANCE,
   STACKS_SBTC_ASSET_NAME,
@@ -18,7 +19,7 @@ import {
   STACKS_SBTC_TOKEN_ADDRESS,
   STACKS_SBTC_TOKEN_NAME,
 } from "@/lib/stacks-config";
-import { formatMicrostxToStx } from "@/lib/stx-utils";
+import { formatMicrostxToStx, formatUsd, microstxToStxNumber } from "@/lib/stx-utils";
 
 type TxItem = {
   tx_id: string;
@@ -87,6 +88,7 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
   const [transactions, setTransactions] = useState<TxItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const priceFeed = usePriceFeed();
 
   const baseUrl = STACKS_NETWORK_INSTANCE.client.baseUrl;
 
@@ -184,6 +186,21 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
     return `${formatMicrostxToStx(depositBalance)} STX`;
   }, [depositBalance]);
 
+  const balanceUsd = useMemo(() => {
+    if (balance === null || priceFeed.stxUsd === null) return null;
+    return microstxToStxNumber(balance) * priceFeed.stxUsd;
+  }, [balance, priceFeed.stxUsd]);
+
+  const depositUsd = useMemo(() => {
+    if (depositBalance === null || priceFeed.stxUsd === null) return null;
+    return microstxToStxNumber(depositBalance) * priceFeed.stxUsd;
+  }, [depositBalance, priceFeed.stxUsd]);
+
+  const sbtcUsdBalance = useMemo(() => {
+    if (sbtcBalance === null || priceFeed.sbtcUsd === null) return null;
+    return microstxToStxNumber(sbtcBalance) * priceFeed.sbtcUsd;
+  }, [priceFeed.sbtcUsd, sbtcBalance]);
+
   return (
     <div className="grid gap-6">
       <div className="w-full rounded-3xl border border-white/15 bg-white/10 p-6 shadow-[0_24px_70px_rgba(30,12,6,0.55)] backdrop-blur-2xl">
@@ -218,6 +235,9 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
               <p className="mt-3 text-2xl font-semibold text-white">
                 {balanceLabel}
               </p>
+              <p className="mt-1 text-xs text-orange-100/70">
+                {balanceUsd === null ? "USD unavailable" : `≈ ${formatUsd(balanceUsd)}`}
+              </p>
               <p className="mt-2 text-xs text-orange-100/70">
                 {stxAddress ? stxAddress : "Connect wallet to view balance."}
               </p>
@@ -228,6 +248,9 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
               </p>
               <p className="mt-3 text-2xl font-semibold text-white">
                 {depositLabel}
+              </p>
+              <p className="mt-1 text-xs text-orange-100/70">
+                {depositUsd === null ? "USD unavailable" : `≈ ${formatUsd(depositUsd)}`}
               </p>
               <p className="mt-2 text-xs text-orange-100/70">
                 Contract: {STACKS_CONTRACT_NAME}
@@ -240,9 +263,49 @@ export function DashboardPanel({ activeWallet }: DashboardPanelProps) {
               <p className="mt-3 text-2xl font-semibold text-white">
                 {sbtcLabel}
               </p>
+              <p className="mt-1 text-xs text-orange-100/70">
+                {sbtcUsdBalance === null ? "USD unavailable" : `≈ ${formatUsd(sbtcUsdBalance)}`}
+              </p>
               <p className="mt-2 text-xs text-orange-100/70">
                 Token: {STACKS_SBTC_TOKEN_NAME}
               </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-200/80">
+                Prices
+              </p>
+              <div className="mt-3 grid gap-2 text-sm text-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-100/70">STX</span>
+                  <span>{formatUsd(priceFeed.stxUsd)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-orange-100/70">sBTC</span>
+                  <span>{formatUsd(priceFeed.sbtcUsd)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-orange-100/70">
+                  <span>Oracle status</span>
+                  <span>{priceFeed.oracleStatus}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-orange-100/70">
+                  <span>Oracle price</span>
+                  <span>
+                    {priceFeed.stxPerSbtc === null
+                      ? "-"
+                      : `${priceFeed.stxPerSbtc.toFixed(2)} STX / sBTC`}
+                  </span>
+                </div>
+              </div>
+              {priceFeed.oracleError ? (
+                <p className="mt-2 text-xs text-amber-200">
+                  Oracle error: {priceFeed.oracleError}
+                </p>
+              ) : null}
+              {priceFeed.marketError ? (
+                <p className="mt-2 text-xs text-amber-200">
+                  Market error: {priceFeed.marketError}
+                </p>
+              ) : null}
             </div>
           </div>
 

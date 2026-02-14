@@ -25,7 +25,13 @@ import {
   STACKS_NETWORK,
   STACKS_NETWORK_INSTANCE,
 } from "@/lib/stacks-config";
-import { formatMicrostxToStx, parseStxToMicrostx } from "@/lib/stx-utils";
+import { usePriceFeed } from "@/lib/hooks/use-price-feed";
+import {
+  formatMicrostxToStx,
+  formatUsd,
+  microstxToStxNumber,
+  parseStxToMicrostx,
+} from "@/lib/stx-utils";
 
 type ActionType = "deposit" | "withdraw" | "borrow" | "repay";
 
@@ -106,6 +112,7 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
   const [isWorking, setIsWorking] = useState(false);
   const [simCollateralDelta, setSimCollateralDelta] = useState(0);
   const [simBorrowDelta, setSimBorrowDelta] = useState(0);
+  const priceFeed = usePriceFeed();
 
   const parsedAmount = useMemo(() => parseStxToMicrostx(amount), [amount]);
   const parsedBorrowAmount = useMemo(
@@ -117,6 +124,30 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
     [collateralAmount],
   );
   const parsedWcAmount = useMemo(() => parseStxToMicrostx(wcAmount), [wcAmount]);
+  const stxUsd = priceFeed.stxUsd;
+  const sbtcUsd = priceFeed.sbtcUsd;
+  const stxPriceLabel = formatUsd(stxUsd);
+  const sbtcPriceLabel = formatUsd(sbtcUsd);
+
+  const amountUsd = useMemo(() => {
+    if (!parsedAmount || stxUsd === null) return null;
+    return microstxToStxNumber(parsedAmount) * stxUsd;
+  }, [parsedAmount, stxUsd]);
+
+  const borrowUsd = useMemo(() => {
+    if (!parsedBorrowAmount || stxUsd === null) return null;
+    return microstxToStxNumber(parsedBorrowAmount) * stxUsd;
+  }, [parsedBorrowAmount, stxUsd]);
+
+  const collateralUsd = useMemo(() => {
+    if (!parsedCollateralAmount || stxUsd === null) return null;
+    return microstxToStxNumber(parsedCollateralAmount) * stxUsd;
+  }, [parsedCollateralAmount, stxUsd]);
+
+  const wcUsd = useMemo(() => {
+    if (!parsedWcAmount || stxUsd === null) return null;
+    return microstxToStxNumber(parsedWcAmount) * stxUsd;
+  }, [parsedWcAmount, stxUsd]);
   const hasActiveWallet = activeWallet !== null;
   const useStacksWallet = activeWallet === "stacks";
   const isContractWalletConnected = hasActiveWallet
@@ -542,6 +573,15 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
                 ? "WalletConnect"
                 : "None"}
           </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            STX: {stxPriceLabel}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            sBTC: {sbtcPriceLabel}
+          </span>
+          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+            Oracle: {priceFeed.oracleStatus}
+          </span>
         </div>
         {networkMismatch ? (
           <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-100">
@@ -562,6 +602,7 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
                   ? `${parsedAmount.toString()} microstacks`
                   : "Enter a number with up to 6 decimals."
               }
+              usdHint={amountUsd === null ? "USD unavailable" : `≈ ${formatUsd(amountUsd)}`}
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <PrimaryButton onClick={() => submit("deposit")} disabled={!canSubmit}>
@@ -585,6 +626,9 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
                   ? `${parsedCollateralAmount.toString()} microstacks`
                   : "Enter a number with up to 6 decimals."
               }
+              usdHint={
+                collateralUsd === null ? "USD unavailable" : `≈ ${formatUsd(collateralUsd)}`
+              }
             />
             <AmountField
               label="Borrow amount (STX)"
@@ -595,6 +639,7 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
                   ? `${parsedBorrowAmount.toString()} microstacks`
                   : "Enter a number with up to 6 decimals."
               }
+              usdHint={borrowUsd === null ? "USD unavailable" : `≈ ${formatUsd(borrowUsd)}`}
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <PrimaryButton onClick={() => submit("borrow")} disabled={!canBorrow}>
@@ -638,6 +683,7 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
                 ? `${parsedWcAmount.toString()} microstacks`
                 : "Enter a number with up to 6 decimals."
             }
+            usdHint={wcUsd === null ? "USD unavailable" : `≈ ${formatUsd(wcUsd)}`}
           />
           <TextField
             label="Memo (optional)"
@@ -874,10 +920,11 @@ type AmountFieldProps = {
   label: string;
   value: string;
   hint: string;
+  usdHint?: string;
   onChange: (value: string) => void;
 };
 
-function AmountField({ label, value, hint, onChange }: AmountFieldProps) {
+function AmountField({ label, value, hint, usdHint, onChange }: AmountFieldProps) {
   return (
     <label className="flex flex-col gap-2">
       <span className="text-sm font-medium text-orange-50/90">{label}</span>
@@ -890,6 +937,7 @@ function AmountField({ label, value, hint, onChange }: AmountFieldProps) {
         placeholder="0.0"
       />
       <span className="text-xs text-orange-100/70">{hint}</span>
+      {usdHint ? <span className="text-xs text-orange-100/60">{usdHint}</span> : null}
     </label>
   );
 }
