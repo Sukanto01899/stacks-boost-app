@@ -9,24 +9,24 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: mock-oracle-v4
+            contract-name: mock-oracle-v5
             expected-sender: ST1K2XGT5RNGT42N49BH936VDF8NXWNZJY0N432CM
             cost: 26770
-            path: "contracts\\mock-oracle.clar"
+            path: "contracts\\mock-oracle-v1.clar"
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: sbtc-deposit-dummy-v2
+            contract-name: sbtc-deposit-dummy-v5
             expected-sender: ST1K2XGT5RNGT42N49BH936VDF8NXWNZJY0N432CM
             cost: 18160
-            path: "contracts\\sbtc-deposit-dummy.clar"
+            path: "contracts\\sbtc-deposit-dummy-v1.clar"
             anchor-block-only: true
             clarity-version: 3
         - contract-publish:
-            contract-name: stackslend-v4
+            contract-name: stackslend-v5
             expected-sender: ST1K2XGT5RNGT42N49BH936VDF8NXWNZJY0N432CM
             cost: 141050
-            path: "contracts\\lending-pool.clar"
+            path: "contracts\\lending-pool-v1.clar"
             anchor-block-only: true
             clarity-version: 3
       epoch: "3.2"

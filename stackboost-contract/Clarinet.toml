@@ -12,18 +12,18 @@ requirements = [
   'SM1793C4R5PZ4NS4VQ4WMP7SKKYVH8JZEWSZ9HCCR.xyk-pool-sbtc-stx-v-1-1',
 ]
 
-[contracts.stackslend-v4]
-path = 'contracts/lending-pool.clar'
+[contracts.stackslend-v5]
+path = 'contracts/lending-pool-v1.clar'
 clarity_version = 3
 epoch = 'latest'
 
-[contracts.mock-oracle-v4]
-path = 'contracts/mock-oracle.clar'
+[contracts.mock-oracle-v5]
+path = 'contracts/mock-oracle-v1.clar'
 clarity_version = 3
 epoch = 'latest'
 
-[contracts.sbtc-deposit-dummy-v2]
-path = 'contracts/sbtc-deposit-dummy.clar'
+[contracts.sbtc-deposit-dummy-v5]
+path = 'contracts/sbtc-deposit-dummy-v1.clar'
 clarity_version = 3
 epoch = 'latest'
 
