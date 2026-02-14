@@ -104,6 +104,8 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
   const [lastTxError, setLastTxError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+  const [simCollateralDelta, setSimCollateralDelta] = useState(0);
+  const [simBorrowDelta, setSimBorrowDelta] = useState(0);
 
   const parsedAmount = useMemo(() => parseStxToMicrostx(amount), [amount]);
   const parsedBorrowAmount = useMemo(
@@ -164,6 +166,50 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
   }, [lastTxId]);
 
   const networkMismatch = null;
+
+  const riskParams = useMemo(
+    () => ({
+      maxLtv: 0.65,
+      liquidationLtv: 0.8,
+    }),
+    [],
+  );
+
+  const safeNumber = (value: bigint | null) =>
+    value === null ? 0 : Number(value) / 1_000_000;
+
+  const depositedStx = safeNumber(depositedBalance);
+  const borrowedStx = safeNumber(borrowedBalance);
+
+  const simulatedCollateral = Math.max(0, depositedStx + simCollateralDelta);
+  const simulatedBorrow = Math.max(0, borrowedStx + simBorrowDelta);
+
+  const healthFactor = useMemo(() => {
+    if (simulatedBorrow === 0) return Infinity;
+    return (simulatedCollateral * riskParams.liquidationLtv) / simulatedBorrow;
+  }, [riskParams.liquidationLtv, simulatedBorrow, simulatedCollateral]);
+
+  const utilization = useMemo(() => {
+    if (simulatedCollateral === 0) return 0;
+    return Math.min(1, simulatedBorrow / simulatedCollateral);
+  }, [simulatedBorrow, simulatedCollateral]);
+
+  const statusLabel = useMemo(() => {
+    if (healthFactor === Infinity) return "Unlevered";
+    if (healthFactor >= 1.5) return "Healthy";
+    if (healthFactor >= 1.1) return "Watch";
+    if (healthFactor >= 1.0) return "Critical";
+    return "Liquidation risk";
+  }, [healthFactor]);
+
+  const statusColor =
+    healthFactor >= 1.5
+      ? "text-emerald-200"
+      : healthFactor >= 1.1
+        ? "text-amber-200"
+        : healthFactor >= 1.0
+          ? "text-orange-200"
+          : "text-rose-200";
 
   const loadDepositedBalance = useCallback(async () => {
     if (!activeStxAddress) {
@@ -635,6 +681,86 @@ export function StxActions({ mode = "all", activeWallet }: StxActionsProps) {
             </div>
           ) : null}
         </ActionCard>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent px-4 py-4 text-sm text-orange-50/90">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-orange-200/70">
+              Health + risk
+            </p>
+            <h3 className="font-serif text-lg text-white">Simulated position</h3>
+          </div>
+          <span className={`text-xs font-semibold uppercase tracking-[0.22em] ${statusColor}`}>
+            {statusLabel}
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-orange-100/70">Health factor</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {healthFactor === Infinity ? "∞" : healthFactor.toFixed(2)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-orange-100/70">Utilization</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {(utilization * 100).toFixed(0)}%
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-orange-100/70">Max LTV</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {(riskParams.maxLtv * 100).toFixed(0)}%
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-orange-100/70">Liquidation LTV</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {(riskParams.liquidationLtv * 100).toFixed(0)}%
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-100/70">
+              Simulate collateral change (STX)
+            </span>
+            <input
+              type="range"
+              min={-50}
+              max={50}
+              step={1}
+              value={simCollateralDelta}
+              onChange={(event) => setSimCollateralDelta(Number(event.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10"
+            />
+            <span className="text-xs text-orange-100/70">
+              {simCollateralDelta >= 0 ? "+" : ""}
+              {simCollateralDelta} STX
+            </span>
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-100/70">
+              Simulate borrow change (STX)
+            </span>
+            <input
+              type="range"
+              min={-50}
+              max={50}
+              step={1}
+              value={simBorrowDelta}
+              onChange={(event) => setSimBorrowDelta(Number(event.target.value))}
+              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10"
+            />
+            <span className="text-xs text-orange-100/70">
+              {simBorrowDelta >= 0 ? "+" : ""}
+              {simBorrowDelta} STX
+            </span>
+          </label>
+        </div>
       </div>
 
       {!isContractWalletConnected ? (
